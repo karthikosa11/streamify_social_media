@@ -1,0 +1,398 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Story viewer animations */
+@keyframes story-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.story-progress-bar {
+  animation: story-progress 5s linear;
+}
+
+/* --- REMOVING CONFLICTING STREAM CSS --- */
+/* The styles below were forcing a narrow, centered layout and light theme. */
+/* They have been commented out to allow our custom layout and dark theme to take precedence. */
+
+/*
+.str-chat__channel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, #c9e8c9, #b7e7bb);
+  height: 100%;
+}
+
+.str-chat__container {
+  max-width: 1200px;
+  width: 100%;
+  height: 80% !important;
+  margin: 0 auto !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.str-chat__list {
+  background-color: #ffffff;
+  padding: 12px;
+}
+*/
+/* --- END OF REMOVALS --- */
+
+.str-chat__list-notifications {
+  display: none;
+}
+
+.str-chat__message-input {
+  border-top: 1px solid #ddd;
+}
+
+/* Story ring gradients */
+.story-ring-unseen {
+  background: linear-gradient(45deg, #f58529, #dd2a7b, #8134af, #515bd4);
+  padding: 2px;
+}
+.story-ring-seen {
+  background: #d1d5db; /* Tailwind gray-300 */
+  padding: 2px;
+}
+
+/* Call Controls */
+.call-controls {
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+  z-index: 50;
+  padding: 1rem;
+  border-radius: 9999px;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+}
+
+.call-controls button {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  transition: all 0.2s;
+}
+
+.call-controls button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.call-controls button.active {
+  background-color: #ef4444;
+}
+
+/* Audio Visualizer */
+.audio-visualizer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  transform: scale(var(--volumeter-scale));
+  filter: brightness(var(--volumeter-brightness));
+}
+
+.audio-visualizer__aura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.audio-visualizer__aura::before,
+.audio-visualizer__aura::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  border-radius: 50%;
+  mix-blend-mode: plus-lighter;
+  animation: aura-pulse alternate ease-in-out infinite;
+}
+
+.audio-visualizer__aura::before {
+  width: 60vmin;
+  height: 60vmin;
+  background: #0055fff0; /* Blue for AI speaking */
+  animation-delay: -1s;
+  animation-duration: 2s;
+}
+
+.audio-visualizer__aura_listening::before {
+  background: #ff4444f0; /* Red for user speaking (listening mode) */
+}
+
+.audio-visualizer__aura::after {
+  width: 40vmin;
+  height: 40vmin;
+  background: #1af0fff0; /* Light blue for AI speaking */
+  animation-duration: 5s;
+}
+
+.audio-visualizer__aura_listening::after {
+  background: #ff6666f0; /* Light red for user speaking (listening mode) */
+}
+
+@keyframes aura-pulse {
+  from {
+    transform: scale(0.99);
+    filter: brightness(0.85) blur(50px);
+  }
+  to {
+    transform: scale(1);
+    filter: brightness(1) blur(50px);
+  }
+}
+
+/* Voice Agent Call Controls - Override for voice agent page */
+.str-video .call-controls {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  padding: 0;
+  border-radius: 0;
+  background-color: transparent;
+  backdrop-filter: none;
+  z-index: 50;
+}
+
+/* AI Assistant Styles */
+.my-ai-state-indicator {
+  background: #005fff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #003899;
+  margin: 1rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* --- AI ASSISTANT DARK THEME OVERRIDE --- */
+/* These styles force a dark theme for the AI assistant page, overriding Stream's defaults. */
+.str-chat__theme-dark .str-chat__main-panel,
+.str-chat__theme-dark .str-chat__message-list {
+  background-color: #0f172a !important; /* slate-900 */
+}
+
+.str-chat__theme-dark .str-chat__message-simple__body p,
+.str-chat__theme-dark .str-chat__message-text p,
+.str-chat__theme-dark .str-chat__message-simple .str-chat__message-text-inner {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+.str-chat__theme-dark .str-chat__message--me {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+.str-chat__theme-dark .str-chat__message--other {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+.str-chat__theme-dark .str-chat__channel-header {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #e2e8f0 !important; /* slate-200 */
+}
+/* --- END OF DARK THEME OVERRIDE --- */
+
+/* --- FINAL TEXT COLOR OVERRIDE --- */
+/* This is the definitive rule to ensure all message text is visible in the dark theme. */
+.str-chat__theme-dark .str-chat__message-text-inner,
+.str-chat__theme-dark .str-chat__message-text-inner p {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+/* Stream Chat Customization */
+.str-chat__channel {
+  width: 100%;
+}
+
+.str-chat__thread {
+  width: 45%;
+}
+
+.str-chat__channel-list {
+  width: 30%;
+}
+
+/* Custom message styling */
+/*
+.str-chat__message {
+  border-radius: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.str-chat__message--me {
+  background-color: #005fff;
+  color: white;
+}
+
+.str-chat__message--other {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.str-chat__message[data-user-id="ai-assistant"] {
+  background-color: #f0f9ff;
+  border-left: 4px solid #005fff;
+}
+*/
+
+/* Typing indicator */
+/*
+.str-chat__typing-indicator {
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  margin: 0.5rem 1rem;
+}
+*/
+
+/* Message input styling */
+/*
+.str-chat__input-flat {
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+}
+
+.str-chat__input-flat:focus {
+  border-color: #005fff;
+  box-shadow: 0 0 0 2px rgba(0, 95, 255, 0.1);
+}
+*/
+
+/* Channel header styling */
+/*
+.str-chat__channel-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem;
+}
+*/
+
+/* Message list styling */
+/*
+.str-chat__message-list {
+  background-color: #ffffff;
+}
+*/
+
+/* Thread styling */
+/*
+.str-chat__thread {
+  background-color: #f9fafb;
+  border-left: 1px solid #e5e7eb;
+}
+*/
+
+/* Responsive design */
+/*
+@media (max-width: 768px) {
+  .str-chat__thread {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+  }
+}
+*/
+
+/* --- GLOBAL LAYOUT RESETS --- */
+/* Removing old layout rules that were breaking the AI Assistant page */
+/*
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+}
+#root {
+  display: flex;
+}
+
+.str-chat__channel-list {
+  width: 30%;
+}
+.str-chat__channel {
+  width: 100%;
+}
+.str-chat__thread {
+  width: 45%;
+}
+
+.my-channel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: normal;
+  padding: 0rem 1rem;
+  border-bottom: 1px solid lightgray;
+}
+
+.my-channel-header button {
+  background: #005fff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+}
+
+.my-message {
+  border: 1px solid lightgray;
+  padding: 1rem 1.5rem;
+  margin: 0.5rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.my-ai-state-indicator {
+  background: #005fff;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #003899;
+  margin: 1rem;
+}
+*/
