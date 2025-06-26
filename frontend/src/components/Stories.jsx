@@ -163,6 +163,7 @@ const Stories = () => {
                   src={authUser?.profilePic}
                   alt="Your Story"
                   className="rounded-full w-full h-full object-cover"
+                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                 />
               ) : (
                 <div className="bg-base-200 rounded-full flex items-center justify-center w-full h-full">
@@ -204,6 +205,7 @@ const Stories = () => {
                   src={story.user.profilePic}
                   alt={story.user.fullName}
                   className="rounded-full w-full h-full object-cover"
+                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                 />
               </div>
             </div>

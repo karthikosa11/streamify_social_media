@@ -154,6 +154,7 @@ const StoryViewer = ({ story, onClose, onDeleteItem, isOwnStory, isDeleting }) =
                   src={story.user.profilePic} 
                   alt={story.user.fullName}
                   className="rounded-full"
+                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                 />
               </div>
             </div>

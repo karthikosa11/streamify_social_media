@@ -80,7 +80,7 @@ const EmergencyNudge = () => {
                       >
                         <div className='avatar'>
                           <div className='w-8 rounded-full'>
-                            <img src={friend.profilePic} alt={friend.fullName} />
+                            <img src={friend.profilePic} alt={friend.fullName} onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
                           </div>
                         </div>
                         <span>{friend.fullName}</span>

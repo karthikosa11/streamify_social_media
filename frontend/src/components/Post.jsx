@@ -174,7 +174,7 @@ const Post = ({ post }) => {
         <Link to={`/profile/${post.user.username}`} className='flex items-center gap-3'>
           <div className='avatar'>
             <div className='w-10 rounded-full'>
-              <img src={post.user.profilePic} alt={post.user.fullName} />
+              <img src={post.user.profilePic} alt={post.user.fullName} onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
             </div>
           </div>
           <div>
@@ -312,7 +312,7 @@ const Post = ({ post }) => {
               <div key={comment._id} className='flex items-start gap-3'>
                 <div className='avatar'>
                   <div className='w-8 rounded-full'>
-                    <img src={comment.user.profilePic} alt={comment.user.fullName} />
+                    <img src={comment.user.profilePic} alt={comment.user.fullName} onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
                   </div>
                 </div>
                 <div className='flex-1'>

@@ -5,7 +5,7 @@
 ### Backend (.env)
 ```bash
 # Database
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/streamify
+MONGODB_URI=mongodb+srv://us:p@clur.mongodb.net/streamify
 
 # JWT Secret (generate a strong secret)
 JWT_SECRET=your-super-secure-jwt-secret-key-here

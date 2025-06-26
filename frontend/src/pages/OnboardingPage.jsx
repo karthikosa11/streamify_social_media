@@ -133,6 +133,7 @@ const OnboardingPage = () => {
                       src={formState.profilePic instanceof File ? URL.createObjectURL(formState.profilePic) : formState.profilePic}
                       alt="Profile Preview"
                       className="w-full h-full object-cover"
+                      onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">

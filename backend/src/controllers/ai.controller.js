@@ -192,33 +192,30 @@ export const deleteGeneratedMedia = async (req, res) => {
   }
 
   try {
-    // Extract filename from mediaUrl (e.g., "/uploads/image_123.png" -> "image_123.png")
-    const filename = mediaUrl.split('/').pop();
-    
-    if (!filename) {
-      return res.status(400).json({ message: "Invalid media URL" });
+    if (mediaUrl.includes('cloudinary.com')) {
+      // Extract public_id from the URL (e.g., .../streamify-ai/abc123.png)
+      const publicIdMatch = mediaUrl.match(/streamify-ai\/([^\.\/]+)\./);
+      const publicId = publicIdMatch ? `streamify-ai/${publicIdMatch[1]}` : null;
+      if (!publicId) {
+        return res.status(400).json({ message: "Invalid Cloudinary URL" });
+      }
+      await cloudinary.v2.uploader.destroy(publicId, { resource_type: 'image' });
+      return res.json({ message: "Cloudinary image deleted successfully", deletedFile: publicId });
+    } else {
+      // Local file deletion (existing logic)
+      const filename = mediaUrl.split('/').pop();
+      if (!filename) {
+        return res.status(400).json({ message: "Invalid media URL" });
+      }
+      const filepath = path.join(uploadsDir, filename);
+      try {
+        await access(filepath);
+      } catch (error) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      await unlink(filepath);
+      return res.json({ message: "Generated media deleted successfully", deletedFile: filename });
     }
-
-    // Construct the full file path
-    const filepath = path.join(uploadsDir, filename);
-
-    // Check if file exists
-    try {
-      await access(filepath);
-    } catch (error) {
-      return res.status(404).json({ message: "File not found" });
-    }
-
-    // Delete the file
-    await unlink(filepath);
-    
-    console.log(`✅ Deleted generated media: ${filename}`);
-
-    return res.json({
-      message: "Generated media deleted successfully",
-      deletedFile: filename
-    });
-
   } catch (error) {
     console.error("❌ Error deleting generated media:", error);
     return res.status(500).json({

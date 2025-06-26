@@ -251,7 +251,12 @@ const Sidebar = () => {
         {/* Fixed Header */}
         <div className='p-5 border-b border-base-300 flex-shrink-0'>
           <Link to='/' className='flex items-center gap-2.5'>
-            <ShipWheelIcon className='size-9 text-primary' />
+            <img
+              src="/favicon1.png"
+              alt="Streamify Logo"
+              className="h-14 w-14 object-contain"
+              style={{ maxHeight: 56 }}
+            />
             <span className='text-3xl font-bold font-mono bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary  tracking-wider'>
               Streamify
             </span>
@@ -395,7 +400,11 @@ const Sidebar = () => {
           <div className='flex items-center gap-3 mb-3'>
             <div className='avatar'>
               <div className='w-10 rounded-full'>
-                <img src={authUser?.profilePic} alt='User Avatar' />
+                <img
+                  src={authUser?.profilePic}
+                  alt='User Avatar'
+                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                />
               </div>
             </div>
             <div className='flex-1'>
