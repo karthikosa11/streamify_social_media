@@ -63,7 +63,7 @@ const NotificationsPage = () => {
 
   // Check if a friend request has already been sent to a user
   const hasRequestBeenSent = (userId) => {
-    return outgoingRequests.some(request => request.recipient._id === userId);
+    return outgoingRequests.some(request => request.recipient?._id === userId);
   };
 
   const incomingRequests = friendRequests?.incomingReqs || [];
@@ -108,16 +108,20 @@ const NotificationsPage = () => {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div className="avatar w-14 h-14 rounded-full bg-base-300">
-                                <img src={request.sender.profilePic} alt={request.sender.fullName} />
+                                <img 
+                                  src={request.sender?.profilePic || '/default-avatar.png'} 
+                                  alt={request.sender?.fullName || 'User'} 
+                                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                                />
                               </div>
                               <div>
-                                <h3 className="font-semibold">{request.sender.fullName}</h3>
+                                <h3 className="font-semibold">{request.sender?.fullName || 'Unknown User'}</h3>
                                 <div className="flex flex-wrap gap-1.5 mt-1">
                                   <span className="badge badge-secondary badge-sm">
-                                    Native: {request.sender.nativeLanguage}
+                                    Native: {request.sender?.nativeLanguage || 'Unknown'}
                                   </span>
                                   <span className="badge badge-outline badge-sm">
-                                    Learning: {request.sender.learningLanguage}
+                                    Learning: {request.sender?.learningLanguage || 'Unknown'}
                                   </span>
                                 </div>
                               </div>
@@ -153,14 +157,15 @@ const NotificationsPage = () => {
                           <div className="flex items-start gap-3">
                             <div className="avatar mt-1 size-10 rounded-full">
                               <img
-                                src={notification.recipient.profilePic}
-                                alt={notification.recipient.fullName}
+                                src={notification.recipient?.profilePic || '/default-avatar.png'}
+                                alt={notification.recipient?.fullName || 'User'}
+                                onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                               />
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-semibold">{notification.recipient.fullName}</h3>
+                              <h3 className="font-semibold">{notification.recipient?.fullName || 'Unknown User'}</h3>
                               <p className="text-sm my-1">
-                                {notification.recipient.fullName} accepted your friend request
+                                {notification.recipient?.fullName || 'Unknown User'} accepted your friend request
                               </p>
                               <p className="text-xs flex items-center opacity-70">
                                 <ClockIcon className="h-3 w-3 mr-1" />
@@ -219,12 +224,16 @@ const NotificationsPage = () => {
                     <div className="card-body p-5 space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="avatar size-16 rounded-full">
-                          <img src={user.profilePic} alt={user.fullName} />
+                          <img 
+                            src={user?.profilePic || '/default-avatar.png'} 
+                            alt={user?.fullName || 'User'} 
+                            onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                          />
                         </div>
 
                         <div>
-                          <h3 className="font-semibold text-lg">{user.fullName}</h3>
-                          {user.location && (
+                          <h3 className="font-semibold text-lg">{user?.fullName || 'Unknown User'}</h3>
+                          {user?.location && (
                             <div className="flex items-center text-xs opacity-70 mt-1">
                               <MapPinIcon className="size-3 mr-1" />
                               {user.location}
@@ -236,14 +245,14 @@ const NotificationsPage = () => {
                       {/* Languages with flags */}
                       <div className="flex flex-wrap gap-1.5">
                         <span className="badge badge-secondary">
-                          Native: {capitialize(user.nativeLanguage)}
+                          Native: {capitialize(user?.nativeLanguage || 'Unknown')}
                         </span>
                         <span className="badge badge-outline">
-                          Learning: {capitialize(user.learningLanguage)}
+                          Learning: {capitialize(user?.learningLanguage || 'Unknown')}
                         </span>
                       </div>
 
-                      {user.bio && <p className="text-sm opacity-70">{user.bio}</p>}
+                      {user?.bio && <p className="text-sm opacity-70">{user.bio}</p>}
 
                       {/* Action button */}
                       <button
