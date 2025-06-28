@@ -5,6 +5,7 @@ import StoryViewer from "./StoryViewer";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createStory, getStories, deleteStory } from "../lib/api";
 import toast from "react-hot-toast";
+import { getProfilePicUrl } from "../lib/utils";
 
 // Helper to group stories by user and merge items
 function groupStoriesByUser(stories) {
@@ -160,10 +161,9 @@ const Stories = () => {
             <div className={`w-14 rounded-full ring-2 ${userStory ? 'ring-primary' : 'ring-base-content/20'} p-0.5`}>
               {userStory && userStory.items && userStory.items.length > 0 ? (
                 <img
-                  src={authUser?.profilePic}
+                  src={getProfilePicUrl(authUser?.profilePic)}
                   alt="Your Story"
                   className="rounded-full w-full h-full object-cover"
-                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                 />
               ) : (
                 <div className="bg-base-200 rounded-full flex items-center justify-center w-full h-full">
@@ -202,10 +202,9 @@ const Stories = () => {
             <div className="avatar">
               <div className={`w-14 rounded-full ${seenStories.includes(story.user._id) ? 'story-ring-seen' : 'story-ring-unseen'}`}> 
                 <img
-                  src={story.user.profilePic}
+                  src={getProfilePicUrl(story.user.profilePic)}
                   alt={story.user.fullName}
                   className="rounded-full w-full h-full object-cover"
-                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                 />
               </div>
             </div>

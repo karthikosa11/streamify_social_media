@@ -52,17 +52,24 @@ export async function sendFriendRequest(req, res) {
       return res.status(404).json({ message: "Recipient not found" });
     }
 
-    // check if user is already friends
-    if (recipient.friends.includes(myId)) {
+    // Get current user to check friends array
+    const currentUser = await User.findById(myId);
+    if (!currentUser) {
+      return res.status(404).json({ message: "Current user not found" });
+    }
+
+    // check if users are already friends (check both users' friends arrays)
+    if (currentUser.friends.includes(recipientId) || recipient.friends.includes(myId)) {
       return res.status(400).json({ message: "You are already friends with this user" });
     }
 
-    // check if a req already exists
+    // check if a pending req already exists
     const existingRequest = await FriendRequest.findOne({
       $or: [
         { sender: myId, recipient: recipientId },
         { sender: recipientId, recipient: myId },
       ],
+      status: "pending" // Only check for pending requests
     });
 
     if (existingRequest) {
@@ -71,6 +78,29 @@ export async function sendFriendRequest(req, res) {
         .json({ message: "A friend request already exists between you and this user" });
     }
 
+    // Check if there's a rejected request and update it to pending
+    const rejectedRequest = await FriendRequest.findOne({
+      $or: [
+        { sender: myId, recipient: recipientId },
+        { sender: recipientId, recipient: myId },
+      ],
+      status: "rejected"
+    });
+
+    if (rejectedRequest) {
+      // Update the rejected request to pending and update the sender/recipient if needed
+      console.log(`Updating rejected friend request ${rejectedRequest._id} to pending for users ${myId} -> ${recipientId}`);
+      rejectedRequest.status = "pending";
+      rejectedRequest.sender = myId;
+      rejectedRequest.recipient = recipientId;
+      await rejectedRequest.save();
+      
+      res.status(201).json(rejectedRequest);
+      return;
+    }
+
+    // Create new friend request if no existing request found
+    console.log(`Creating new friend request from ${myId} to ${recipientId}`);
     const friendRequest = await FriendRequest.create({
       sender: myId,
       recipient: recipientId,
@@ -98,6 +128,16 @@ export async function acceptFriendRequest(req, res) {
       return res.status(403).json({ message: "You are not authorized to accept this request" });
     }
 
+    // Check if request is already accepted
+    if (friendRequest.status === "accepted") {
+      return res.status(400).json({ message: "Friend request has already been accepted" });
+    }
+
+    // Check if request was rejected
+    if (friendRequest.status === "rejected") {
+      return res.status(400).json({ message: "Friend request was rejected and cannot be accepted" });
+    }
+
     friendRequest.status = "accepted";
     await friendRequest.save();
 
@@ -113,7 +153,7 @@ export async function acceptFriendRequest(req, res) {
 
     res.status(200).json({ message: "Friend request accepted" });
   } catch (error) {
-    // console.log("Error in acceptFriendRequest controller", error.message);
+    console.log("Error in acceptFriendRequest controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -128,14 +168,29 @@ export async function getFriendRequests(req, res) {
     // Filter out requests with missing sender
     const filteredIncomingReqs = incomingReqs.filter(req => req.sender);
 
+    // Get accepted requests from the last 24 hours where current user is either sender or recipient
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
     const acceptedReqs = await FriendRequest.find({
-      sender: req.user.id,
-      status: "accepted",
-    }).populate("recipient", "fullName profilePic");
+      $or: [
+        { sender: req.user.id, status: "accepted" },
+        { recipient: req.user.id, status: "accepted" }
+      ],
+      updatedAt: { $gte: twentyFourHoursAgo } // Only get requests updated in the last 24 hours
+    }).populate([
+      {
+        path: "sender",
+        select: "fullName profilePic nativeLanguage learningLanguage"
+      },
+      {
+        path: "recipient", 
+        select: "fullName profilePic nativeLanguage learningLanguage"
+      }
+    ]);
 
     res.status(200).json({ incomingReqs: filteredIncomingReqs, acceptedReqs });
   } catch (error) {
-    // console.log("Error in getPendingFriendRequests controller", error.message);
+    console.log("Error in getPendingFriendRequests controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -253,11 +308,10 @@ export const updateProfile = async (req, res) => {
   try {
     console.log('📝 Profile update request:', {
       body: req.body,
-      hasFile: !!req.file,
       userId: req.user._id
     });
 
-    const { fullName, email, dateOfBirth, gender, bio, nativeLanguage, learningLanguage, location } = req.body;
+    const { fullName, email, dateOfBirth, gender, bio, nativeLanguage, learningLanguage, location, profilePic } = req.body;
     const updateData = {};
 
     // Only update fields that are provided
@@ -270,9 +324,14 @@ export const updateProfile = async (req, res) => {
     if (learningLanguage) updateData.learningLanguage = learningLanguage;
     if (location) updateData.location = location;
 
-    // Handle profile picture upload
-    if (req.file) {
-      updateData.profilePic = `/uploads/${req.file.filename}`;
+    // Handle profile picture - only allow external avatar URLs
+    if (profilePic) {
+      // Validate that it's an external URL (not a file upload)
+      if (profilePic.startsWith('http') && !profilePic.includes('localhost')) {
+        updateData.profilePic = profilePic;
+      } else {
+        return res.status(400).json({ message: "Only external avatar URLs are allowed" });
+      }
     }
 
     console.log('🔄 Updating user with data:', updateData);
@@ -352,3 +411,33 @@ The Streamify Team
     res.status(500).json({ message: getErrorMessage(error) });
   }
 };
+
+export async function rejectFriendRequest(req, res) {
+  try {
+    const { id: requestId } = req.params;
+
+    const friendRequest = await FriendRequest.findById(requestId);
+
+    if (!friendRequest) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
+
+    // Verify the current user is the recipient
+    if (friendRequest.recipient.toString() !== req.user.id) {
+      return res.status(403).json({ message: "You are not authorized to reject this request" });
+    }
+
+    // Check if request is already processed
+    if (friendRequest.status !== "pending") {
+      return res.status(400).json({ message: "Friend request has already been processed" });
+    }
+
+    friendRequest.status = "rejected";
+    await friendRequest.save();
+
+    res.status(200).json({ message: "Friend request rejected" });
+  } catch (error) {
+    console.log("Error in rejectFriendRequest controller", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}

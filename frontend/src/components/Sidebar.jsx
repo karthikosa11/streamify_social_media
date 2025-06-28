@@ -12,6 +12,7 @@ import SimpleThemeToggle from "./SimpleThemeToggle";
 import useLogout from "../hooks/useLogout";
 import { useThemeStore } from "../store/useThemeStore";
 import { THEMES } from "../constants";
+import { getProfilePicUrl } from "../lib/utils";
 
 // Bottom Navigation Component for mobile/tablet
 const BottomNavigation = () => {
@@ -401,9 +402,8 @@ const Sidebar = () => {
             <div className='avatar'>
               <div className='w-10 rounded-full'>
                 <img
-                  src={authUser?.profilePic}
+                  src={getProfilePicUrl(authUser?.profilePic)}
                   alt='User Avatar'
-                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                 />
               </div>
             </div>

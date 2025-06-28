@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { X, Trash2 } from "lucide-react";
+import { getProfilePicUrl } from "../lib/utils";
 
 const StoryViewer = ({ story, onClose, onDeleteItem, isOwnStory, isDeleting }) => {
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
@@ -151,7 +152,7 @@ const StoryViewer = ({ story, onClose, onDeleteItem, isOwnStory, isDeleting }) =
             <div className="avatar">
               <div className="w-8 h-8 rounded-full ring-2 ring-white/20">
                 <img 
-                  src={story.user.profilePic} 
+                  src={getProfilePicUrl(story.user.profilePic)} 
                   alt={story.user.fullName}
                   className="rounded-full"
                   onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
@@ -197,10 +198,6 @@ const StoryViewer = ({ story, onClose, onDeleteItem, isOwnStory, isDeleting }) =
               src={currentItem.url}
               alt="Story"
               className="w-full h-full object-contain"
-              onError={(e) => {
-                console.error("Error loading image:", e);
-                e.target.src = story.user.profilePic; // Fallback to user's profile pic
-              }}
             />
           ) : (
             <video

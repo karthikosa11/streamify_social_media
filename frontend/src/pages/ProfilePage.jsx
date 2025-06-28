@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { axiosInstance } from '../lib/axios';
 import { toast } from 'react-hot-toast';
-import { Loader2, Camera, Calendar, User, Info } from 'lucide-react';
+import { Loader2, Calendar, User, Info, ShuffleIcon } from 'lucide-react';
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -13,9 +13,8 @@ const ProfilePage = () => {
     dateOfBirth: '',
     gender: '',
     bio: '',
-    profilePic: null
+    profilePic: ''
   });
-  const [previewUrl, setPreviewUrl] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -25,24 +24,8 @@ const ProfilePage = () => {
         dateOfBirth: user.dateOfBirth || '',
         gender: user.gender || '',
         bio: user.bio || '',
-        profilePic: null
+        profilePic: user.profilePic || ''
       });
-      
-      // Fix mixed content error by using the correct backend URL
-      if (user.profilePic) {
-        if (user.profilePic.startsWith('http')) {
-          // If it's already a full URL (e.g., Cloudinary), use it as is
-          setPreviewUrl(user.profilePic);
-        } else {
-          // If it's a relative path, construct the full URL
-          const backendUrl = import.meta.env.MODE === "development" 
-            ? "http://localhost:5001" 
-            : window.location.origin;
-          setPreviewUrl(`${backendUrl}${user.profilePic}`);
-        }
-      } else {
-        setPreviewUrl('');
-      }
     }
   }, [user]);
 
@@ -54,15 +37,14 @@ const ProfilePage = () => {
     }));
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({
-        ...prev,
-        profilePic: file
-      }));
-      setPreviewUrl(URL.createObjectURL(file));
-    }
+  const handleRandomAvatar = () => {
+    const idx = Math.floor(Math.random() * 100) + 1;
+    const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
+    setFormData(prev => ({
+      ...prev,
+      profilePic: randomAvatar
+    }));
+    toast.success("Random avatar generated!");
   };
 
   const handleSubmit = async (e) => {
@@ -70,26 +52,8 @@ const ProfilePage = () => {
     setLoading(true);
 
     try {
-      const formDataToSend = new FormData();
+      const response = await axiosInstance.put('/users/profile', formData);
       
-      // Add all form fields
-      formDataToSend.append('fullName', formData.fullName);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
-      formDataToSend.append('gender', formData.gender);
-      formDataToSend.append('bio', formData.bio);
-      
-      // Add profile picture if it exists
-      if (formData.profilePic) {
-        formDataToSend.append('profilePic', formData.profilePic);
-      }
-
-      const response = await axiosInstance.put('/users/profile', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
       // Update the user context with the new data
       updateUser(response.data);
       toast.success('Profile updated successfully!');
@@ -111,24 +75,19 @@ const ProfilePage = () => {
           <div className="flex flex-col items-center space-y-4">
             <div className="relative">
               <img
-                src={previewUrl || 'https://via.placeholder.com/150'}
+                src={formData.profilePic || 'https://via.placeholder.com/150'}
                 alt="Profile"
                 className="w-32 h-32 rounded-full object-cover"
               />
-              <label
-                htmlFor="profilePic"
+              <button
+                type="button"
+                onClick={handleRandomAvatar}
                 className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90"
               >
-                <Camera className="w-5 h-5" />
-                <input
-                  type="file"
-                  id="profilePic"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
+                <ShuffleIcon className="w-5 h-5" />
+              </button>
             </div>
+            <p className="text-sm text-gray-500">Click the shuffle icon to generate a new avatar</p>
           </div>
 
           {/* Full Name */}

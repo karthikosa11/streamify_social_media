@@ -14,6 +14,7 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { likePost, commentOnPost, deletePost, deleteComment, sharePost } from "../lib/api";
 import useAuthUser from "../hooks/useAuthUser";
+import { getProfilePicUrl } from '../lib/utils';
 
 const Post = ({ post }) => {
   const { authUser, isLoading: authLoading } = useAuthUser();
@@ -185,7 +186,7 @@ const Post = ({ post }) => {
         <Link to={`/profile/${post.user.username}`} className='flex items-center gap-3'>
           <div className='avatar'>
             <div className='w-10 rounded-full'>
-              <img src={post.user.profilePic} alt={post.user.fullName} onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
+              <img src={getProfilePicUrl(post.user.profilePic)} alt={post.user.fullName} />
             </div>
           </div>
           <div>
@@ -323,7 +324,7 @@ const Post = ({ post }) => {
               <div key={comment._id} className='flex items-start gap-3'>
                 <div className='avatar'>
                   <div className='w-8 rounded-full'>
-                    <img src={comment.user.profilePic} alt={comment.user.fullName} onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
+                    <img src={getProfilePicUrl(comment.user.profilePic)} alt={comment.user.fullName} />
                   </div>
                 </div>
                 <div className='flex-1'>

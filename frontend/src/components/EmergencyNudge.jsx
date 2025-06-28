@@ -5,6 +5,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 import { getUserFriends, sendEmergencyNudge } from "../lib/api";
 import PageLoader from "./PageLoader";
+import { getProfilePicUrl } from '../lib/utils';
 
 const EmergencyNudge = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -80,7 +81,7 @@ const EmergencyNudge = () => {
                       >
                         <div className='avatar'>
                           <div className='w-8 rounded-full'>
-                            <img src={friend.profilePic} alt={friend.fullName} onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }} />
+                            <img src={getProfilePicUrl(friend.profilePic)} alt={friend.fullName} />
                           </div>
                         </div>
                         <span>{friend.fullName}</span>

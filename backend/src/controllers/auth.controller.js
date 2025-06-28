@@ -28,7 +28,7 @@ export async function signup(req, res) {
       return res.status(400).json({ message: "Email already exists. Please use a different email" });
     }
 
-    // Generate random avatar
+    // Generate random avatar (always use external avatar service)
     const idx = Math.floor(Math.random() * 100) + 1;
     const randomAvatar = `https://avatar.iran.liara.run/public/${idx}.png`;
 
@@ -37,7 +37,7 @@ export async function signup(req, res) {
       email,
       fullName,
       password,
-      profilePic: randomAvatar,
+      profilePic: randomAvatar, // Always use external avatar
     });
 
     // Create Stream user

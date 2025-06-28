@@ -1,15 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { acceptFriendRequest, getFriendRequests, getRecommendedUsers, sendFriendRequest, getOutgoingFriendReqs } from "../lib/api";
+import { acceptFriendRequest, getFriendRequests, getRecommendedUsers, sendFriendRequest, getOutgoingFriendReqs, rejectFriendRequest } from "../lib/api";
 import { BellIcon, ClockIcon, MessageSquareIcon, UserCheckIcon, UserPlusIcon, CheckCircleIcon, MapPinIcon } from "lucide-react";
 import NoNotificationsFound from "../components/NoNotificationsFound";
 import PageHeader from "../components/PageHeader";
-import { capitialize } from "../lib/utils";
-import { useState } from "react";
+import { capitialize, getProfilePicUrl } from "../lib/utils";
+import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { useAuth } from "../contexts/AuthContext";
 
 const NotificationsPage = () => {
   const queryClient = useQueryClient();
   const [sendingStates, setSendingStates] = useState({});
+  const { user: currentUser } = useAuth();
 
   const { data: friendRequests, isLoading: loadingRequests } = useQuery({
     queryKey: ["friendRequests"],
@@ -26,11 +28,35 @@ const NotificationsPage = () => {
     queryFn: getOutgoingFriendReqs,
   });
 
+  // Refresh friend requests data every 5 minutes to ensure 24-hour filtering is accurate
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
   const { mutate: acceptRequestMutation, isPending: isAccepting } = useMutation({
     mutationFn: acceptFriendRequest,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
       queryClient.invalidateQueries({ queryKey: ["friends"] });
+      toast.success("Friend request accepted!");
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to accept friend request");
+    },
+  });
+
+  const { mutate: rejectRequestMutation, isPending: isRejecting } = useMutation({
+    mutationFn: rejectFriendRequest,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friendRequests"] });
+      toast.success("Friend request rejected");
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Failed to reject friend request");
     },
   });
 
@@ -69,12 +95,23 @@ const NotificationsPage = () => {
   const incomingRequests = friendRequests?.incomingReqs || [];
   const acceptedRequests = friendRequests?.acceptedReqs || [];
 
-  // Filter accepted requests to show only those accepted in the last 24 hours
-  const recentAcceptedRequests = acceptedRequests.filter((req) => {
-    const acceptedTime = new Date(req.updatedAt);
-    const now = new Date();
-    const diffInHours = (now - acceptedTime) / (1000 * 60 * 60);
-    return diffInHours <= 24;
+  // Process accepted requests and determine the other user (not the current user)
+  // Backend now only returns requests from the last 24 hours, so no additional filtering needed
+  const recentAcceptedRequests = acceptedRequests.map((req) => {
+    // Get the current user's ID from the auth context
+    const currentUserId = currentUser?._id;
+    
+    // Determine which user is the other person (not the current user)
+    const isCurrentUserSender = req.sender?._id === currentUserId;
+    const otherUser = isCurrentUserSender ? req.recipient : req.sender;
+    
+    return {
+      ...req,
+      otherUser,
+      isCurrentUserSender,
+      // For display purposes, use the other user's info
+      displayUser: otherUser
+    };
   });
 
   return (
@@ -109,9 +146,8 @@ const NotificationsPage = () => {
                             <div className="flex items-center gap-3">
                               <div className="avatar w-14 h-14 rounded-full bg-base-300">
                                 <img 
-                                  src={request.sender?.profilePic || '/default-avatar.png'} 
+                                  src={getProfilePicUrl(request.sender?.profilePic)} 
                                   alt={request.sender?.fullName || 'User'} 
-                                  onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                                 />
                               </div>
                               <div>
@@ -127,13 +163,22 @@ const NotificationsPage = () => {
                               </div>
                             </div>
 
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() => acceptRequestMutation(request._id)}
-                              disabled={isAccepting}
-                            >
-                              Accept
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => acceptRequestMutation(request._id)}
+                                disabled={isAccepting || isRejecting}
+                              >
+                                Accept
+                              </button>
+                              <button
+                                className="btn btn-outline btn-error btn-sm"
+                                onClick={() => rejectRequestMutation(request._id)}
+                                disabled={isAccepting || isRejecting}
+                              >
+                                Reject
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -157,15 +202,17 @@ const NotificationsPage = () => {
                           <div className="flex items-start gap-3">
                             <div className="avatar mt-1 size-10 rounded-full">
                               <img
-                                src={notification.recipient?.profilePic || '/default-avatar.png'}
-                                alt={notification.recipient?.fullName || 'User'}
-                                onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
+                                src={getProfilePicUrl(notification.displayUser?.profilePic)}
+                                alt={notification.displayUser?.fullName || 'User'}
                               />
                             </div>
                             <div className="flex-1">
-                              <h3 className="font-semibold">{notification.recipient?.fullName || 'Unknown User'}</h3>
+                              <h3 className="font-semibold">{notification.displayUser?.fullName || 'Unknown User'}</h3>
                               <p className="text-sm my-1">
-                                {notification.recipient?.fullName || 'Unknown User'} accepted your friend request
+                                {notification.isCurrentUserSender 
+                                  ? `${notification.displayUser?.fullName || 'Unknown User'} accepted your friend request`
+                                  : `You accepted ${notification.displayUser?.fullName || 'Unknown User'}'s friend request`
+                                }
                               </p>
                               <p className="text-xs flex items-center opacity-70">
                                 <ClockIcon className="h-3 w-3 mr-1" />
@@ -225,9 +272,8 @@ const NotificationsPage = () => {
                       <div className="flex items-center gap-3">
                         <div className="avatar size-16 rounded-full">
                           <img 
-                            src={user?.profilePic || '/default-avatar.png'} 
+                            src={getProfilePicUrl(user?.profilePic)} 
                             alt={user?.fullName || 'User'} 
-                            onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                           />
                         </div>
 

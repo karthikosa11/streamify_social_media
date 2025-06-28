@@ -3,16 +3,14 @@ import useAuthUser from "../hooks/useAuthUser";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { completeOnboarding } from "../lib/api";
-import { LoaderIcon, MapPinIcon, ShipWheelIcon, ShuffleIcon, Camera, Edit2 } from "lucide-react";
+import { LoaderIcon, MapPinIcon, ShuffleIcon, Camera, Edit2 } from "lucide-react";
 import { LANGUAGES } from "../constants";
-import { axiosInstance } from "../lib/axios";
 import { useNavigate } from "react-router-dom";
 import PageLoader from "../components/PageLoader";
 
 const OnboardingPage = () => {
   const { authUser, isLoading } = useAuthUser();
   const queryClient = useQueryClient();
-  const [isUploading, setIsUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
 
@@ -66,32 +64,11 @@ const OnboardingPage = () => {
     e.preventDefault();
     
     try {
-      // If there's a new profile picture file, upload it first
-      if (formState.profilePic instanceof File) {
-        setIsUploading(true);
-        const formData = new FormData();
-        formData.append('profilePic', formState.profilePic);
-        
-        const response = await axiosInstance.put('/users/profile', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        
-        // Update the profilePic URL with the response
-        setFormState(prev => ({
-          ...prev,
-          profilePic: response.data.profilePic
-        }));
-      }
-
-      // Now submit the onboarding data
+      // Submit the onboarding data
       onboardingMutation(formState);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error(error.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -101,16 +78,6 @@ const OnboardingPage = () => {
 
     setFormState({ ...formState, profilePic: randomAvatar });
     toast.success("Random profile picture generated!");
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormState(prev => ({
-        ...prev,
-        profilePic: file
-      }));
-    }
   };
 
   const toggleEdit = () => {
@@ -135,17 +102,16 @@ const OnboardingPage = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* PROFILE PIC CONTAINER */}
+            {/* AVATAR CONTAINER */}
             <div className="flex flex-col items-center justify-center space-y-4">
-              {/* IMAGE PREVIEW */}
+              {/* AVATAR PREVIEW */}
               <div className="relative">
                 <div className="size-32 rounded-full bg-base-300 overflow-hidden">
                   {formState.profilePic ? (
                     <img
-                      src={formState.profilePic instanceof File ? URL.createObjectURL(formState.profilePic) : formState.profilePic}
-                      alt="Profile Preview"
+                      src={formState.profilePic}
+                      alt="Avatar Preview"
                       className="w-full h-full object-cover"
-                      onError={e => { e.target.onerror = null; e.target.src = '/default-avatar.png'; }}
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full">
@@ -153,32 +119,15 @@ const OnboardingPage = () => {
                     </div>
                   )}
                 </div>
-                {isEditing && (
-                  <label
-                    htmlFor="profilePic"
-                    className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90"
-                  >
-                    <Camera className="w-5 h-5" />
-                    <input
-                      type="file"
-                      id="profilePic"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                  </label>
-                )}
               </div>
 
-              {/* Generate Random Avatar BTN */}
-              {isEditing && (
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={handleRandomAvatar} className="btn btn-accent">
-                    <ShuffleIcon className="size-4 mr-2" />
-                    Generate Random Avatar
-                  </button>
-                </div>
-              )}
+              {/* Generate Random Avatar Button */}
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={handleRandomAvatar} className="btn btn-accent">
+                  <ShuffleIcon className="size-4 mr-2" />
+                  Generate Random Avatar
+                </button>
+              </div>
             </div>
 
             {/* FULL NAME */}
@@ -282,12 +231,12 @@ const OnboardingPage = () => {
               <button
                 type="submit"
                 className="btn btn-primary w-full"
-                disabled={isPending || isUploading}
+                disabled={isPending}
               >
-                {isPending || isUploading ? (
+                {isPending ? (
                   <>
                     <LoaderIcon className="size-4 mr-2 animate-spin" />
-                    {isUploading ? "Uploading..." : "Saving..."}
+                    Saving...
                   </>
                 ) : (
                   "Save Changes"
