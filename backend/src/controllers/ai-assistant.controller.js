@@ -105,6 +105,7 @@ export { activeAgents };
 
 export const startAIAgent = async (req, res) => {
   try {
+    console.log('[AI] activeAgents before start:', Array.from(activeAgents.keys()));
     // console.log('🟡 Starting AI agent with request body:', req.body);
     // console.log('🟡 Request headers:', req.headers);
     // console.log('🟡 User from middleware:', req.user);
@@ -185,6 +186,7 @@ export const startAIAgent = async (req, res) => {
 
     // Store the agent
     activeAgents.set(channelId, agentConfig);
+    console.log('[AI] activeAgents after start:', Array.from(activeAgents.keys()));
     // console.log('🟡 AI agent stored in active agents');
 
     // Set up polling to check for new messages every 3 seconds
@@ -262,6 +264,7 @@ export const startAIAgent = async (req, res) => {
 
 export const stopAIAgent = async (req, res) => {
   try {
+    console.log('[AI] activeAgents before stop:', Array.from(activeAgents.keys()));
     const { channelId, userId } = req.body;
     // console.log(`🟡 Attempting to stop AI agent for channel: ${channelId}`);
 
@@ -282,6 +285,7 @@ export const stopAIAgent = async (req, res) => {
 
     // Always remove the agent from the in-memory map.
     activeAgents.delete(channelId);
+    console.log('[AI] activeAgents after stop:', Array.from(activeAgents.keys()));
     // console.log(`🟡 Agent removed from active map for channel: ${channelId}`);
 
     // Always attempt to remove the AI user from the Stream channel.

@@ -147,12 +147,25 @@ export async function login(req, res) {
       expiresIn: "7d",
     });
 
+    console.log('🔐 Login successful:', {
+      userId: user._id,
+      userEmail: user.email,
+      tokenLength: token.length,
+      nodeEnv: process.env.NODE_ENV,
+      secure: process.env.NODE_ENV === "production"
+    });
+
     // Set cookie for browser-based requests
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
       sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
+    });
+
+    console.log('🍪 Cookie set:', {
+      hasJwtCookie: !!res.getHeader('Set-Cookie'),
+      cookieHeader: res.getHeader('Set-Cookie')
     });
 
     // Also send token in response for mobile/API clients

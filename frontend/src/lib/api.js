@@ -28,8 +28,9 @@ export const getAuthUser = async () => {
     const res = await axiosInstance.get("/auth/me");
     return res.data;
   } catch (error) {
-    // console.log("Error in logout api", error);
-    return null;
+    // Return a proper structure even when there's an error
+    // This allows the useAuthUser hook to handle it properly
+    return { user: null };
   }
 };
 

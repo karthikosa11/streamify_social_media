@@ -18,6 +18,25 @@ router.get("/test-env", (req, res) => {
   });
 });
 
+// Test endpoint for debugging authentication
+router.get("/test-auth", (req, res) => {
+  const token = req.cookies.jwt || req.headers.authorization?.split(' ')[1];
+  
+  res.json({
+    hasToken: !!token,
+    tokenLength: token?.length,
+    hasCookie: !!req.cookies.jwt,
+    hasAuthHeader: !!req.headers.authorization,
+    cookies: Object.keys(req.cookies),
+    headers: {
+      origin: req.headers.origin,
+      host: req.headers.host,
+      'user-agent': req.headers['user-agent']
+    },
+    message: "Auth test completed"
+  });
+});
+
 // Get current user info (protected route)
 router.get("/me", protectRoute, (req, res) => {
   res.json({

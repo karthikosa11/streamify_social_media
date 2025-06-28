@@ -10,7 +10,7 @@ import {
 } from 'stream-chat-react';
 import { useCreateChatClient } from 'stream-chat-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { getStreamToken, startAIAgent } from '../lib/api';
+import { getStreamToken, startAIAgent, stopAIAgent } from '../lib/api';
 import PageLoader from '../components/PageLoader';
 import useAuthUser from '../hooks/useAuthUser';
 import MyChannelHeader from '../components/MyChannelHeader';
@@ -241,15 +241,14 @@ function ChatComponent({ tokenData, authUser, theme }) {
 
   const handleStopAI = async () => {
     try {
-      // Clear all messages from the channel
       if (channel) {
+        // 1. Call backend to stop the agent
+        await stopAIAgent(channel.id);
+        // 2. Clear all messages from the channel
         await channel.truncate();
         setMessages([]);
       }
-      
-      // Reset activation state
       setIsActivated(false);
-      
       toast.success('AI Assistant stopped. Conversation cleared.');
     } catch (error) {
       console.error('Error stopping AI:', error);

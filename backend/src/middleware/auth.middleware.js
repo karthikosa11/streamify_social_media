@@ -11,7 +11,10 @@ export const protectRoute = async (req, res, next) => {
       hasAuthHeader: !!req.headers.authorization,
       tokenLength: token?.length,
       path: req.path,
-      method: req.method
+      method: req.method,
+      cookies: Object.keys(req.cookies),
+      origin: req.headers.origin,
+      host: req.headers.host
     });
 
     if (!token) {
