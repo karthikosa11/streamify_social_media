@@ -142,6 +142,10 @@ function ChatComponent({ tokenData, authUser, theme }) {
   const [isActivated, setIsActivated] = useState(false);
   const [messages, setMessages] = useState([]);
 
+  if (!authUser || !authUser._id) {
+    return <PageLoader />;
+  }
+
   const client = useCreateChatClient({
     apiKey: VITE_STREAM_API_KEY,
     tokenOrProvider: tokenData.token,
@@ -166,7 +170,7 @@ function ChatComponent({ tokenData, authUser, theme }) {
   });
 
   useEffect(() => {
-    if (!client || !authUser) return;
+    if (!client || !authUser || !authUser._id) return;
 
     const channel = client.channel('messaging', `ai-assistant-${authUser._id}`, {
       name: 'AI Assistant',
@@ -213,7 +217,7 @@ function ChatComponent({ tokenData, authUser, theme }) {
   }, [client]);
 
   const handleActivateAI = async () => {
-    if (channel) {
+    if (channel && authUser && authUser._id) {
       try {
         // console.log('🟡 Activating AI with data:', {
         //   channelId: channel.id,
@@ -291,16 +295,16 @@ function ChatComponent({ tokenData, authUser, theme }) {
 }
 
 export default function AIAssistantPage() {
-  const { authUser } = useAuthUser();
+  const { authUser, isLoading: authLoading } = useAuthUser();
   const { theme } = useThemeStore();
 
   const { data: tokenData, isLoading: tokenLoading } = useQuery({
     queryKey: ["streamToken"],
     queryFn: getStreamToken,
-    enabled: !!authUser,
+    enabled: !!authUser && !!authUser._id,
   });
 
-  if (tokenLoading || !tokenData?.token || !authUser) {
+  if (authLoading || tokenLoading || !tokenData?.token || !authUser || !authUser._id) {
     return <PageLoader />;
   }
 

@@ -14,7 +14,7 @@ export const uploadPost = async (req, res) => {
     let absoluteMediaUrl = mediaUrl || "";
     if (mediaUrl) {
       const isProd = process.env.NODE_ENV === "production";
-      const backendUrl = isProd ? process.env.BACKEND_URL : "http://localhost:5001";
+      const backendUrl = isProd ? process.env.BACKEND_URL || process.env.FRONTEND_URL : "http://localhost:5001";
       // Ensure mediaUrl uses forward slashes and remove leading './' if present
       const normalizedPath = mediaUrl.replace(/^\\?\.?\\?/, '').replace(/\\/g, '/');
       absoluteMediaUrl = isProd

@@ -38,7 +38,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     const initChat = async () => {
-      if (!tokenData?.token || !authUser) return;
+      if (!tokenData?.token || !authUser || !authUser._id) return;
 
       try {
         // console.log("Initializing stream chat client...");

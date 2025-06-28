@@ -27,7 +27,22 @@ const ProfilePage = () => {
         bio: user.bio || '',
         profilePic: null
       });
-      setPreviewUrl(user.profilePic ? `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${user.profilePic}` : '');
+      
+      // Fix mixed content error by using the correct backend URL
+      if (user.profilePic) {
+        if (user.profilePic.startsWith('http')) {
+          // If it's already a full URL (e.g., Cloudinary), use it as is
+          setPreviewUrl(user.profilePic);
+        } else {
+          // If it's a relative path, construct the full URL
+          const backendUrl = import.meta.env.MODE === "development" 
+            ? "http://localhost:5001" 
+            : window.location.origin;
+          setPreviewUrl(`${backendUrl}${user.profilePic}`);
+        }
+      } else {
+        setPreviewUrl('');
+      }
     }
   }, [user]);
 

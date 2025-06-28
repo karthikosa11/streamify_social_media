@@ -16,7 +16,7 @@ import { likePost, commentOnPost, deletePost, deleteComment, sharePost } from ".
 import useAuthUser from "../hooks/useAuthUser";
 
 const Post = ({ post }) => {
-  const { authUser } = useAuthUser();
+  const { authUser, isLoading: authLoading } = useAuthUser();
   const queryClient = useQueryClient();
 
   const [commentText, setCommentText] = useState("");
@@ -92,6 +92,17 @@ const Post = ({ post }) => {
 
   const isLiked = authUser && post.likes && post.likes.includes(authUser._id);
   const isMyPost = authUser && post.user._id === authUser._id;
+
+  // Show loading state while authentication is being determined
+  if (authLoading) {
+    return (
+      <div className='bg-base-200 rounded-lg shadow-md mb-6 p-4'>
+        <div className="flex items-center justify-center">
+          <span className="loading loading-spinner loading-md"></span>
+        </div>
+      </div>
+    );
+  }
 
   const handleLike = () => {
     if (!isLiking) {

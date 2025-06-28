@@ -24,7 +24,10 @@ const AIPage = () => {
       // Only prepend backend URL if mediaUrl is a relative path
       let mediaUrl = data.mediaUrl;
       if (mediaUrl && !/^https?:\/\//i.test(mediaUrl)) {
-        mediaUrl = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}${mediaUrl}`;
+        const backendUrl = import.meta.env.MODE === "development" 
+          ? "http://localhost:5001" 
+          : window.location.origin;
+        mediaUrl = `${backendUrl}${mediaUrl}`;
       }
       setGeneratedContent({
         mediaUrl,
