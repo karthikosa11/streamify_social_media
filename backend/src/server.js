@@ -56,6 +56,16 @@ if (process.env.NODE_ENV === "production") {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('❌ Server error:', err.stack);
+  console.error('❌ Error details:', {
+    message: err.message,
+    name: err.name,
+    code: err.code,
+    path: req.path,
+    method: req.method,
+    body: req.body,
+    query: req.query,
+    params: req.params
+  });
   res.status(500).json({
     message: "Something went wrong!",
     error: process.env.NODE_ENV === 'development' ? err.message : undefined

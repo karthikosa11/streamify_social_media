@@ -7,9 +7,13 @@ import toast from "react-hot-toast";
   const ForgotPasswordPage=()=>{
     const [email,setEmail]=useState("");
     const [message,setMessage]=useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit=async (e)=>{
         e.preventDefault();
+        setIsLoading(true);
+        setMessage("");
+        
         try{
           // console.log("Sending forgot-password request with email:", email);
 
@@ -19,6 +23,12 @@ import toast from "react-hot-toast";
             setEmail("");
         }catch(error){
             // console.log("Error in forget password page",error)
+            console.error("Error in forget password page",error);
+            const errorMessage = error.response?.data?.message || "Failed to send reset link. Please try again.";
+            toast.error(errorMessage);
+            setMessage(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -38,8 +48,12 @@ import toast from "react-hot-toast";
             </span>
           </div>
 
-          {/* ERROR MESSAGE DISPLAY */}
-          
+          {/* MESSAGE DISPLAY */}
+          {message && (
+            <div className={`alert ${message.includes('sent') ? 'alert-success' : 'alert-error'} mb-4`}>
+              <span>{message}</span>
+            </div>
+          )}
 
           <div className="w-full">
             <form onSubmit={handleSubmit}>
@@ -47,7 +61,7 @@ import toast from "react-hot-toast";
                 <div>
                   <h2 className="text-xl font-semibold">Password Reset</h2>
                   <p className="text-sm opacity-70">
-                    Reset your password and start yout journey
+                    Reset your password and start your journey
                   </p>
                 </div>
 
@@ -63,17 +77,19 @@ import toast from "react-hot-toast";
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={isLoading}
                     />
                   </div>
 
-
-                  <button type="submit" className="btn btn-primary w-full">
-                    
-                      
-                        Send Reset Link
-                    
-                   
-                    
+                  <button type="submit" className="btn btn-primary w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <>
+                        <span className="loading loading-spinner loading-sm"></span>
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Reset Link"
+                    )}
                   </button>
 
                   <div className="text-center mt-4">
@@ -95,7 +111,9 @@ import toast from "react-hot-toast";
           <div className="max-w-md p-8">
             {/* Illustration */}
             <div className="relative aspect-square max-w-sm mx-auto">
-              <img src="videocall.png" alt="Language connection illustration" className="w-full h-full" />
+              <div className="w-full h-full bg-primary/20 rounded-lg flex items-center justify-center">
+                <ShipWheelIcon className="size-32 text-primary/40" />
+              </div>
             </div>
 
             <div className="text-center space-y-3 mt-6">

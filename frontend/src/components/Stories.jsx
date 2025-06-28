@@ -26,7 +26,7 @@ function groupStoriesByUser(stories) {
 }
 
 const Stories = () => {
-  const { authUser } = useAuthUser();
+  const { authUser, isLoading: authLoading } = useAuthUser();
   const [selectedStory, setSelectedStory] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
@@ -130,16 +130,16 @@ const Stories = () => {
   };
 
   // Find user's story
-  const userStory = groupedStories.find(story => story.user._id === authUser?._id);
+  const userStory = authUser && authUser._id ? groupedStories.find(story => story.user._id === authUser._id) : null;
 
   // Sort stories: unseen first, seen last (excluding user's own story)
-  const otherStories = groupedStories.filter(story => story.user._id !== authUser?._id);
+  const otherStories = authUser && authUser._id ? groupedStories.filter(story => story.user._id !== authUser._id) : groupedStories;
   const sortedStories = [
     ...otherStories.filter(story => !seenStories.includes(story.user._id)),
     ...otherStories.filter(story => seenStories.includes(story.user._id)),
   ];
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="flex items-center justify-center p-4">
         <span className="loading loading-spinner loading-md"></span>
@@ -226,7 +226,7 @@ const Stories = () => {
               deleteStoryMutation({ storyId: selectedStory._id, itemId });
             }
           }}
-          isOwnStory={selectedStory.user._id === authUser?._id}
+          isOwnStory={authUser && authUser._id ? selectedStory.user._id === authUser._id : false}
           isDeleting={isDeleting}
         />
       )}

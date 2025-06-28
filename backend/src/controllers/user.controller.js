@@ -3,6 +3,7 @@ import FriendRequest from "../models/FriendRequest.js";
 import bcrypt from 'bcryptjs';
 import { getErrorMessage } from "../utils/error.utils.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import jwt from 'jsonwebtoken';
 
 export async function getRecommendedUsers(req, res) {
   try {
@@ -174,7 +175,7 @@ export const register = async (req, res) => {
     await user.save();
 
     // Create token
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
     res.status(201).json({
       token,
@@ -209,7 +210,7 @@ export const login = async (req, res) => {
     }
 
     // Create token
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
     res.json({
       token,
@@ -229,20 +230,31 @@ export const login = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    console.log('👤 Getting profile for user:', req.user._id);
+    
+    const user = await User.findById(req.user._id).select('-password');
     if (!user) {
+      console.log('❌ User not found for profile');
       return res.status(404).json({ message: 'User not found' });
     }
+    
+    console.log('✅ Profile retrieved for:', user.email);
     res.json(user);
   } catch (error) {
-    console.error('Error getting profile:', error);
+    console.error('❌ Error getting profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
 export const updateProfile = async (req, res) => {
   try {
-    const { fullName, email, dateOfBirth, gender, bio } = req.body;
+    console.log('📝 Profile update request:', {
+      body: req.body,
+      hasFile: !!req.file,
+      userId: req.user._id
+    });
+
+    const { fullName, email, dateOfBirth, gender, bio, nativeLanguage, learningLanguage, location } = req.body;
     const updateData = {};
 
     // Only update fields that are provided
@@ -251,25 +263,32 @@ export const updateProfile = async (req, res) => {
     if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
     if (gender) updateData.gender = gender;
     if (bio) updateData.bio = bio;
+    if (nativeLanguage) updateData.nativeLanguage = nativeLanguage;
+    if (learningLanguage) updateData.learningLanguage = learningLanguage;
+    if (location) updateData.location = location;
 
     // Handle profile picture upload
     if (req.file) {
       updateData.profilePic = `/uploads/${req.file.filename}`;
     }
 
+    console.log('🔄 Updating user with data:', updateData);
+
     const user = await User.findByIdAndUpdate(
-      req.user.id,
+      req.user._id,
       { $set: updateData },
       { new: true }
     ).select('-password');
 
     if (!user) {
+      console.log('❌ User not found for update');
       return res.status(404).json({ message: 'User not found' });
     }
 
+    console.log('✅ Profile updated successfully for:', user.email);
     res.json(user);
   } catch (error) {
-    console.error('Error updating profile:', error);
+    console.error('❌ Error updating profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -290,6 +309,15 @@ export const emergencyNudge = async (req, res) => {
       return res.status(404).json({ message: "Sender not found." });
     }
 
+    // Check if email configuration is available
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error("Email configuration missing for emergency nudge:", {
+        hasEmailUser: !!process.env.EMAIL_USER,
+        hasEmailPass: !!process.env.EMAIL_PASS
+      });
+      return res.status(500).json({ message: "Email service not configured. Please contact support." });
+    }
+
     const subject = `Urgent: ${sender.fullName} is trying to reach you!`;
     const emailText = `
 Hello ${recipient.fullName},
@@ -304,13 +332,18 @@ Thank you,
 The Streamify Team
     `;
 
-    await sendEmail({
-      to: recipient.email,
-      subject,
-      text: emailText,
-    });
-
-    res.status(200).json({ message: `Emergency nudge sent to ${recipient.fullName}.` });
+    try {
+      await sendEmail({
+        to: recipient.email,
+        subject,
+        text: emailText,
+      });
+      
+      res.status(200).json({ message: `Emergency nudge sent to ${recipient.fullName}.` });
+    } catch (emailError) {
+      console.error("Email sending failed for emergency nudge:", emailError);
+      return res.status(500).json({ message: "Failed to send emergency nudge. Please try again later." });
+    }
   } catch (error) {
     console.error("Error in emergencyNudge controller:", error);
     res.status(500).json({ message: getErrorMessage(error) });

@@ -66,11 +66,11 @@ export async function signup(req, res) {
       { expiresIn: "7d" }
     );
 
-    // Set cookie
+    // Set cookie for browser-based requests
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: "lax", // Changed from strict to lax for local development
+      sameSite: "lax",
       secure: process.env.NODE_ENV === "production",
     });
 
@@ -89,7 +89,7 @@ export async function signup(req, res) {
             </p>
             <p style="font-size: 15px; color: #555;">Get started by opening the app and saying hello to your friends 👇</p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="background-color: #4a90e2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">Open Streamify</a>
+              <a href="${process.env.FRONTEND_URL || 'https://streamify-social-media-web.onrender.com'}" style="background-color: #4a90e2; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">Open Streamify</a>
             </div>
             <p style="font-size: 13px; color: #999;">If you didn't sign up for Streamify, you can safely ignore this email.</p>
             <hr style="margin: 30px 0;">
@@ -99,13 +99,21 @@ export async function signup(req, res) {
           </div>
         </div>
       `;
-      await sendEmail(email, "Welcome to Streamify", html);
+      await sendEmail({
+        to: email,
+        subject: "Welcome to Streamify",
+        html: html
+      });
     } catch (emailError) {
-      // console.error("Error sending welcome email:", emailError);
+      console.error("Error sending welcome email:", emailError);
       // Don't fail signup if email fails
     }
 
-    res.status(201).json({ success: true, user: newUser });
+    res.status(201).json({ 
+      success: true, 
+      user: newUser,
+      token // Include token in response for clients that need it
+    });
   } catch (error) {
     // console.error("Error in auth signup controller:", error);
     res.status(500).json({ 
@@ -131,7 +139,7 @@ export async function login(req, res) {
 
     // Verify JWT secret is available
     if (!process.env.JWT_SECRET) {
-      // console.error('JWT_SECRET is not defined in environment variables');
+      console.error('JWT_SECRET is not defined in environment variables');
       return res.status(500).json({ message: "Server configuration error" });
     }
 
@@ -139,16 +147,22 @@ export async function login(req, res) {
       expiresIn: "7d",
     });
 
+    // Set cookie for browser-based requests
     res.cookie("jwt", token, {
       maxAge: 7 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: "lax", // Changed from strict to lax for local development
-      secure: false, // Set to false for local development
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
     });
 
-    res.status(200).json({ success: true, user });
+    // Also send token in response for mobile/API clients
+    res.status(200).json({ 
+      success: true, 
+      user,
+      token // Include token in response for clients that need it
+    });
   } catch (error) {
-    // console.log("Error in login controller", error.message);
+    console.error("Error in login controller:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 }
@@ -209,8 +223,22 @@ export async function onboard(req, res) {
 export async function forgotPassword(req,res){
   try {
     const {email}=req.body;
+    
+    if (!email) {
+      return res.status(400).json({message:"Email is required"});
+    }
+
     const user=await User.findOne({email});
     if(!user) return res.status(404).json({message:"User not found"});
+
+    // Check if email configuration is available
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error("Email configuration missing:", {
+        hasEmailUser: !!process.env.EMAIL_USER,
+        hasEmailPass: !!process.env.EMAIL_PASS
+      });
+      return res.status(500).json({message:"Email service not configured. Please contact support."});
+    }
 
     const token=crypto.randomBytes(32).toString('hex');
     const hashedToken=crypto.createHash('sha256').update(token).digest('hex');
@@ -221,7 +249,7 @@ export async function forgotPassword(req,res){
     await user.save();
     // console.log("updated user",user);
 
-    const resetUrl=`${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${token}`;
+    const resetUrl=`${process.env.FRONTEND_URL || 'https://streamify-social-media-web.onrender.com'}/reset-password/${token}`;
 
     const html = `
     <p>Hi ${user.fullName || 'User'},</p>
@@ -229,46 +257,117 @@ export async function forgotPassword(req,res){
     <a href="${resetUrl}">${resetUrl}</a>
   `;
 
-  await sendEmail(user.email, 'Streamify Password Reset', html);
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: 'Streamify Password Reset',
+      html: html
+    });
     
-  res.json({ message: 'Password reset link sent to email' });
-
+    res.json({ message: 'Password reset link sent to email' });
+  } catch (emailError) {
+    console.error("Email sending failed:", emailError);
+    // Clear the reset token since email failed
+    user.resetToken = undefined;
+    user.resetTokenExpire = undefined;
+    await user.save();
+    
+    return res.status(500).json({message:"Failed to send email. Please try again later."});
+  }
 
   } catch (error) {
-    // console.error("Error in forget password controller",error);
-    res.status(400).json({message:"Internal server Error"});
+    console.error("Error in forget password controller",error);
+    res.status(500).json({message:"Internal server Error"});
   }
 }
 export async function resetPassword(req,res){
   try {
-    const token=crypto.createHash('sha256').update(req.params.token).digest('hex');
+    // Check critical environment variables first
+    if (!process.env.MONGODB_URI) {
+      console.error('❌ MONGODB_URI is not set');
+      return res.status(500).json({ 
+        message: "Database configuration error. Please contact support.",
+        error: process.env.NODE_ENV === 'development' ? 'MONGODB_URI not configured' : undefined
+      });
+    }
 
-  const user=await User.findOne({
-      resetToken:token,
-      resetTokenExpire:{$gt:Date.now()},
+    if (!process.env.JWT_SECRET) {
+      console.error('❌ JWT_SECRET is not set');
+      return res.status(500).json({ 
+        message: "Server configuration error. Please contact support.",
+        error: process.env.NODE_ENV === 'development' ? 'JWT_SECRET not configured' : undefined
+      });
+    }
 
-  });
+    const { token } = req.params;
+    const { password } = req.body;
 
-  if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
-  // console.log("the updated pass is",req.body.password);
-  user.password = req.body.password; // Let pre-save hook handle hashing
-  user.resetToken=undefined;
-  user.resetTokenExpire=undefined;
+    console.log('Reset password request received:', {
+      tokenLength: token?.length,
+      hasPassword: !!password,
+      passwordLength: password?.length,
+      nodeEnv: process.env.NODE_ENV,
+      hasMongoUri: !!process.env.MONGODB_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET
+    });
 
-  await user.save();
+    // Basic validation
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token and password are required' });
+    }
 
-  const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
-  const html = `
-    <p>Your password has been updated successfully.</p>
-    <p>You can now <a href="${loginUrl}">log in</a>.</p>
-  `;
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
 
-  await sendEmail(user.email, 'Streamify Password Changed', html);
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-  res.json({ message: 'Password updated successfully' });
+    console.log('Looking for user with hashed token:', hashedToken.substring(0, 10) + '...');
+
+    // Test database connection
+    try {
+      const user = await User.findOne({
+        resetToken: hashedToken,
+        resetTokenExpire: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        console.log('User not found or token expired');
+        return res.status(400).json({ message: 'Invalid or expired token' });
+      }
+
+      console.log('User found, updating password for:', user.email);
+
+      // Update password
+      user.password = password;
+      user.resetToken = undefined;
+      user.resetTokenExpire = undefined;
+
+      await user.save();
+
+      console.log('Password updated successfully for:', user.email);
+
+      res.json({ message: 'Password updated successfully' });
+    } catch (dbError) {
+      console.error('Database error in reset password:', dbError);
+      return res.status(500).json({ 
+        message: "Database error occurred. Please try again.",
+        error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+      });
+    }
   } catch (error) {
-    // console.log("Error reset-password controller", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error('Error in reset-password controller:', error);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      nodeEnv: process.env.NODE_ENV,
+      hasMongoUri: !!process.env.MONGODB_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET
+    });
+    res.status(500).json({ 
+      message: "Failed to reset password",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
-  
-};
+}

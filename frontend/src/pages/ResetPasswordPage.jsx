@@ -19,14 +19,23 @@ const ResetPasswordPage = () => {
             return;
         }
 
+        console.log('Attempting to reset password with token:', {
+            tokenLength: token?.length,
+            hasPassword: !!password,
+            passwordLength: password.length
+        });
+
         try {
             const res = await axiosInstance.post(`/auth/reset-password/${token}`, { password });
             toast.success("Password Reset Successful");
             setPassword("");
             setMessage(res.data.message);
         } catch (error) {
-            // console.log("Error in forget password page",error);
-            toast.error(error.response?.data?.message || "Failed to reset password");
+            console.error("Error in reset password page:", error);
+            console.error("Error response:", error.response?.data);
+            const errorMessage = error.response?.data?.message || "Failed to reset password";
+            toast.error(errorMessage);
+            setMessage(errorMessage);
         }
     }
 return (
@@ -46,7 +55,11 @@ return (
           </div>
 
           {/* ERROR MESSAGE DISPLAY */}
-          
+          {message && (
+            <div className={`alert ${message.includes('successfully') ? 'alert-success' : 'alert-error'} mb-4`}>
+              <span>{message}</span>
+            </div>
+          )}
 
           <div className="w-full">
             <form onSubmit={handleSubmit}>
@@ -54,7 +67,7 @@ return (
                 <div>
                   <h2 className="text-xl font-semibold">Password Reset</h2>
                   <p className="text-sm opacity-70">
-                    Reset your password and start yout journey
+                    Reset your password and start your journey
                   </p>
                 </div>
 

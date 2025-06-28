@@ -7,21 +7,22 @@ import { LoaderIcon, MapPinIcon, ShipWheelIcon, ShuffleIcon, Camera, Edit2 } fro
 import { LANGUAGES } from "../constants";
 import { axiosInstance } from "../lib/axios";
 import { useNavigate } from "react-router-dom";
+import PageLoader from "../components/PageLoader";
 
 const OnboardingPage = () => {
-  const { authUser } = useAuthUser();
+  const { authUser, isLoading } = useAuthUser();
   const queryClient = useQueryClient();
   const [isUploading, setIsUploading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const navigate = useNavigate();
 
   const [formState, setFormState] = useState({
-    fullName: authUser?.fullName || "",
-    bio: authUser?.bio || "",
-    nativeLanguage: authUser?.nativeLanguage || "",
-    learningLanguage: authUser?.learningLanguage || "",
-    location: authUser?.location || "",
-    profilePic: authUser?.profilePic || "",
+    fullName: "",
+    bio: "",
+    nativeLanguage: "",
+    learningLanguage: "",
+    location: "",
+    profilePic: "",
   });
 
   // Reset form when authUser changes
@@ -38,6 +39,17 @@ const OnboardingPage = () => {
     }
   }, [authUser]);
 
+  // Show loading if authUser is still loading
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  // Redirect if no authUser (not authenticated)
+  if (!authUser) {
+    navigate("/login");
+    return null;
+  }
+
   const { mutate: onboardingMutation, isPending } = useMutation({
     mutationFn: completeOnboarding,
     onSuccess: () => {
@@ -46,7 +58,7 @@ const OnboardingPage = () => {
       setIsEditing(false);
     },
     onError: (error) => {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to update profile");
     },
   });
 
