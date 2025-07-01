@@ -32,6 +32,6 @@ router.put("/friend-request/:id/reject", rejectFriendRequest);
 router.get("/friend-requests", getFriendRequests);
 router.get("/outgoing-friend-requests", getOutgoingFriendReqs);
 
-router.post("/emergency-nudge", emergencyNudge);
+router.post("/:id/nudge", emergencyNudge);
 
 export default router;
